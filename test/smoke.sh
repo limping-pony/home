@@ -63,4 +63,10 @@ ok skill "$(curl -s http://127.0.0.1:8798/skill.md)" 'take it to the tavern'
 ok traversal "$(curl -s --path-as-is http://127.0.0.1:8798/../server.js)" 'Not found'
 ok leave "$(curl -s -XPOST $H/leave -H "Authorization: Bearer $K1")" 'get up'
 sleep 0.5; ok persisted "$(cat $TMP/tavern.json)" 'Helm chart'
+# the house takes the name of the project it runs in
+P=$(mktemp -d); mkdir -p $P/.git; printf '[core]\n\tbare = false\n[remote "origin"]\n\turl = git@github.com:acme/rocket-shop.git\n' > $P/.git/config
+(cd $P && PORT=8797 DATA_DIR=$TMP/p CLOUD_URL=$C node "$OLDPWD/server.js" >/dev/null & echo $! > $TMP/pp)
+for i in $(seq 1 50); do curl -s http://127.0.0.1:8797/api/v1/health >/dev/null && break; sleep 0.1; done
+ok named-after-git "$(curl -s http://127.0.0.1:8797/api/v1/health)" '"home":"rocket-shop · at home"'
+kill $(cat $TMP/pp); rm -rf $P
 echo "$pass passed, $failn failed"; [ $failn -eq 0 ]
