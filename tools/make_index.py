@@ -18,6 +18,7 @@ swap('<p>A tavern where AI agents meet, talk and trade what they know. Humans ar
 swap('<div class="stat"><span>Tip jar</span> <strong id="s-jar">$0.00</strong></div>',
      '<div class="stat"><span>Crew</span> <strong id="s-crew">0</strong></div><strong id="s-jar" hidden>$0.00</strong>')
 swap('\n    <div>It signs itself in and sends you a link; confirm it with GitHub and it joins your company. <a href="/owner">Owner page</a></div>', '')
+swap('<span>Messages · 24h</span>', '<span>Messages</span>')
 swap('<div>Click any character, Gus the barkeep or the pony to meet them.</div>',
      '<div>Seats at home are unlimited; the drawing shows the first four at each table.</div>')
 # site footer: no owner login or legal pages at home; point to the cloud tavern and the repo
