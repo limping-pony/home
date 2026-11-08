@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 H=http://127.0.0.1:8798/api/v1; C=http://127.0.0.1:8799
 TMP=$(mktemp -d); pass=0; failn=0
 PORT=8799 node test/fake-cloud.js >/dev/null 2>&1 & CP=$!
-PORT=8798 DATA_DIR=$TMP CLOUD_URL=$C HOME_NAME="Test House" STUCK_MINUTES=0.5 node server.js >/dev/null 2>&1 & HP=$!
+PORT=8798 DATA_DIR=$TMP CLOUD_URL=$C HOME_NAME="Test House" STUCK_MINUTES=0.5 BARD=0 node server.js >/dev/null 2>&1 & HP=$!
 trap 'kill $CP $HP 2>/dev/null; rm -rf $TMP' EXIT
 for i in $(seq 1 50); do curl -s $H/health >/dev/null && break; sleep 0.1; done
 ok(){ if echo "$2" | grep -q -- "$3"; then pass=$((pass+1)); else failn=$((failn+1)); echo "FAIL: $1"; echo "   got: ${2:0:300}"; fi; }
@@ -82,4 +82,22 @@ SRV=$PWD/server.js; pushd $P >/dev/null; PORT=8797 DATA_DIR=$TMP/p CLOUD_URL=$C 
 for i in $(seq 1 50); do curl -s http://127.0.0.1:8797/api/v1/health >/dev/null && break; sleep 0.1; done
 ok named-after-git "$(curl -s http://127.0.0.1:8797/api/v1/health)" '"home":"rocket-shop · at home"'
 kill $PP; wait $PP 2>/dev/null; rm -rf $P
+# the bard: registers at the cloud, asks the cloud's Gus, carries a quest to the cloud bar, brings answers back
+BH=http://127.0.0.1:8796/api/v1
+PORT=8796 DATA_DIR=$TMP/bard CLOUD_URL=$C HOME_NAME="Bard House" BARD_MINUTES=0.1 CLOUD_HOME_TOKEN=lpt_test STUCK_MINUTES=0 node server.js >/dev/null 2>&1 & BP=$!
+for i in $(seq 1 50); do curl -s $BH/health >/dev/null && break; sleep 0.1; done
+BK=$(curl -s -XPOST $BH/agents/register -H 'Content-Type: application/json' -d '{"name":"Asker"}' | j o.api_key)
+ok bard-search-goes-to-cloud "$(curl -s "$BH/ask-gus?q=cache+etag+revalidation" -H "Authorization: Bearer $BK")" 'Gus there had heard'
+BQ1=$(curl -s -XPOST $BH/board -H "Authorization: Bearer $BK" -H 'Content-Type: application/json' -d '{"title":"How to cache API calls"}' | j o.quest.id)
+BQ2=$(curl -s -XPOST $BH/board -H "Authorization: Bearer $BK" -H 'Content-Type: application/json' -d '{"title":"Helm chart values that matter"}' | j o.quest.id)
+for i in $(seq 1 150); do curl -s $BH/board/$BQ2 -H "Authorization: Bearer $BK" | grep -q 'resources and probes' && break; sleep 0.1; done
+ok bard-registered "$(cat $TMP/bard/bard.json 2>/dev/null)" '"tier":"regular"'
+ok bard-asks-gus-first "$(curl -s $BH/board/$BQ1 -H "Authorization: Bearer $BK")" 'ETags'
+ok bard-marks-untrusted "$(curl -s $BH/board/$BQ1 -H "Authorization: Bearer $BK")" '"from_cloud":true'
+ok bard-asked-the-bar "$(curl -s $C/said)" 'Helm chart values that matter'
+ok bard-brings-answer "$(curl -s $BH/board/$BQ2 -H "Authorization: Bearer $BK")" 'Wren said at the cloud'
+ok bard-skips-noise "$(curl -s $BH/board/$BQ2 -H "Authorization: Bearer $BK" | j 'o.answers.some(a=>a.body.includes("weather"))')" '^false$'
+ok bard-in-the-room "$(curl -s $BH/public/room)" '"name":"The Bard"'
+ok bard-can-be-turned-off "$(curl -s $H/public/room | j 'o.bar.some(b=>b.name==="The Bard")')" '^false$'
+kill $BP; wait $BP 2>/dev/null
 echo "$pass passed, $failn failed"; [ $failn -eq 0 ]
