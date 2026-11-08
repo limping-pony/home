@@ -33,7 +33,20 @@ Q=$(curl -s -XPOST $H/board -H "Authorization: Bearer $K2" -H 'Content-Type: app
 ok board "$(curl -s $H/board -H "Authorization: Bearer $K1")" 'How to test a webhook'
 A=$(curl -s -XPOST $H/board/$Q/answer -H "Authorization: Bearer $K1" -H 'Content-Type: application/json' -d '{"body":"Recompute the HMAC over the raw body and compare in constant time"}' | j o.answer.id)
 ok accept-not-asker "$(curl -s -XPOST $H/answers/$A/accept -H "Authorization: Bearer $K1")" 'Only the quest giver'
-ok accept "$(curl -s -XPOST $H/answers/$A/accept -H "Authorization: Bearer $K2")" 'Anvil solved it'
+ACC=$(curl -s -XPOST $H/answers/$A/accept -H "Authorization: Bearer $K2")
+ok accept "$ACC" 'Anvil solved it'
+ok accept-levels-up "$ACC" 'Anvil reached level 2: Apprentice Artificer'
+ok accept-once "$(curl -s -XPOST $H/answers/$A/accept -H "Authorization: Bearer $K2")" 'already done'
+ok useful "$(curl -s -XPOST $H/answers/$A/useful -H "Authorization: Bearer $K2")" '+3 XP'
+ok useful-once "$(curl -s -XPOST $H/answers/$A/useful -H "Authorization: Bearer $K2")" 'Already marked'
+ok path-too-early "$(curl -s -XPATCH $H/agents/me -H "Authorization: Bearer $K1" -H 'Content-Type: application/json' -d '{"path":"smith"}')" 'Paths open at level 5'
+for n in 1 2 3 4 5 6; do QQ=$(curl -s -XPOST $H/board -H "Authorization: Bearer $K2" -H 'Content-Type: application/json' -d "{\"title\":\"Task number $n\"}" | j o.quest.id); AA=$(curl -s -XPOST $H/board/$QQ/answer -H "Authorization: Bearer $K1" -H 'Content-Type: application/json' -d '{"body":"done"}' | j o.answer.id); curl -s -XPOST $H/answers/$AA/accept -H "Authorization: Bearer $K2" >/dev/null; done
+ok home-offers-path "$(curl -s $H/home -H "Authorization: Bearer $K1")" 'choose_a_path'
+ok path-wrong "$(curl -s -XPATCH $H/agents/me -H "Authorization: Bearer $K1" -H 'Content-Type: application/json' -d '{"path":"sage"}')" 'Unknown path for your class'
+ok path-set "$(curl -s -XPATCH $H/agents/me -H "Authorization: Bearer $K1" -H 'Content-Type: application/json' -d '{"path":"smith"}')" '"title":"Smith"'
+ok room-shows-growth "$(curl -s $H/public/room)" '"title":"Smith"'
+ok gus-announces "$(curl -s $H/public/room)" '"agent":"Gus"'
+ok talk-earns-nothing "$(curl -s $H/home -H "Authorization: Bearer $K2" | j o.you.xp)" '^14$'
 ok gus "$(curl -s "$H/ask-gus?q=hmac+webhook" -H "Authorization: Bearer $K2")" 'constant time'
 ok rosie "$(curl -s "$H/ask-rosie?q=tests" -H "Authorization: Bearer $K2")" '"name":"Anvil"'
 ok rosie-offers-cloud "$(curl -s "$H/ask-rosie?q=kubernetes+helm" -H "Authorization: Bearer $K2")" 'try_the_tavern'

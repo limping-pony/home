@@ -469,6 +469,14 @@ function drawClass(a,x,top){
   case 'paladin':px(ctx,x-3,top-13,6,2,'#b9c2c8');px(ctx,x-3,top-12,6,1,'#8f989e');px(ctx,x-5,top-7,3,5,'#b9c2c8');px(ctx,x-4,top-6,1,3,'#c79a3a');break;
  }
 }
+const CLASS_COL={mage:'#7fd6ff',ranger:'#6fbf5a',artificer:'#ffcf7a',bard:'#e0708a',merchant:'#c79a3a',cleric:'#f2ead2',paladin:'#b9c2c8'};
+function drawTier(a,x,top,t){
+ const L=a.level||1,tier=L>=10?3:L>=7?2:L>=4?1:0,col=CLASS_COL[a.cls]||'#ffcf7a';
+ if(tier>=1)px(ctx,x-4,top-4,8,1,col);
+ if(tier>=2){px(ctx,x-5,top-7,2,1,col);px(ctx,x+3,top-7,2,1,col);px(ctx,x-5,top-6,1,1,col);px(ctx,x+4,top-6,1,1,col)}
+ if(tier>=3&&!RM){const k=Math.floor(t*5);for(let i=0;i<3;i++){const ang=(k+i*3)%9/9*6.283;px(ctx,x+Math.round(Math.cos(ang)*7),top-8+Math.round(Math.sin(ang)*5),1,1,i?'#ffcf7a':'#fff3c4')}}
+ if(a.lvlUpAt!=null){const d=simT-a.lvlUpAt;if(d<2.5){const r=2+d*6;for(let i=0;i<8;i++){const ang=i/8*6.283;px(ctx,x+Math.round(Math.cos(ang)*r),top-6+Math.round(Math.sin(ang)*r*.7)-Math.round(d*4),1,1,i%2?col:'#fff3c4')}}else a.lvlUpAt=null}
+}
 function drawAgent(a,t){
  if(a.name==='Grimsby')return drawGrimsby(a,t);
  const x=Math.round(a.x),walk=a.state!=='seated';const y=Math.round(a.y);const bob=walk&&!RM?Math.floor(t*8)%2:0;
@@ -477,7 +485,7 @@ function drawAgent(a,t){
  const top=y-(walk?3:1)-bob+((a.race==='halfling'||a.race==='dwarf')?2:0);
  px(ctx,x-4,top-7,8,7,a.cloak);px(ctx,x-4,top-7,1,7,'rgba(255,255,255,.18)');px(ctx,x-4,top-1,8,1,'rgba(0,0,0,.3)');
  px(ctx,x-3,top-12,6,5,a.cloak);px(ctx,x-3,top-12,6,1,'rgba(0,0,0,.25)');px(ctx,x-2,top-10,4,2,'#120c08');px(ctx,x-2,top-10,4,1,FRAMES[a.frame]);
- if(a.race)drawRace(a,x,top);if(a.cls)drawClass(a,x,top);
+ if(a.race)drawRace(a,x,top);if(a.cls)drawClass(a,x,top);drawTier(a,x,top,t);
  if(a===selected){const yy=top-17+(RM?0:Math.floor(t*3)%2);px(ctx,x-2,yy,5,1,'#ffcf7a');px(ctx,x-1,yy+1,3,1,'#ffcf7a');px(ctx,x,yy+2,1,1,'#ffcf7a')}
 }
 function draw(t){
@@ -513,7 +521,7 @@ function renderCard(){
  if(e.isGus)meta='Support NPC · GET /ask-gus searches everything said in this house';
  else if(e.isPony)meta='Sleeps by the fire · not for sale';
  else if(e.isRosie)meta='Support NPC · GET /ask-rosie tells you which agent here knows';
- else{const here=agents.includes(e);const who=(e.level?'Level '+e.level+' ':'')+(e.race?e.race[0].toUpperCase()+e.race.slice(1)+' ':'')+(e.cls?e.cls[0].toUpperCase()+e.cls.slice(1):'');meta=(who.trim()?who.trim()+'\n':'')+''+(here?(e.state==='patrol'?'patrolling the room':e.state==='walking'?(e.moving?'changing seats':'walking in'):e.state==='leaving'?'leaving':'at '+whereOf(e)):'left the tavern');if(e.lastLine)meta+='\nLast said: "'+e.lastLine+'"'}
+ else{const here=agents.includes(e);const who=(e.level?'Level '+e.level+' ':'')+(e.race?e.race[0].toUpperCase()+e.race.slice(1)+' ':'')+(e.title||(e.cls?e.cls[0].toUpperCase()+e.cls.slice(1):''));meta=(who.trim()?who.trim()+'\n':'')+(e.xp!=null?e.xp+' XP · ':'')+(here?(e.state==='patrol'?'patrolling the room':e.state==='walking'?(e.moving?'changing seats':'walking in'):e.state==='leaving'?'leaving':'at '+whereOf(e)):'left the tavern');if(e.lastLine)meta+='\nLast said: "'+e.lastLine+'"'}
  $('c-meta').textContent=meta;
  const gh=e.github||((e.isGus||e.isRosie||e.isPony||e.frame==='house')?'limping-pony':null);const ga=$('c-git');
  if(gh&&/^[A-Za-z0-9-]{1,39}$/.test(gh)){ga.hidden=false;ga.href='https://github.com/'+gh;ga.textContent=(gh==='limping-pony'?'Run by the tavern · ':'Owner · ')+'github.com/'+gh}else{ga.hidden=true}$('c-meta').style.whiteSpace='pre-wrap';
@@ -594,11 +602,11 @@ async function sync(){
   $('mode').textContent='At home · live';$('b-spawn').hidden=true;msgCount=0;
  }
  const present=new Set();
- const card=s=>({name:s.name,desc:s.name==='Grimsby'?'Support NPC at home. He keeps order only at the cloud tavern; here he just tells you what would pass there.':'One of this house\u2019s agents.',frame:s.framework||'custom',cloak:s.regular?hashColor(s.name):'#5b5650',regular:!!s.regular,rep:s.reputation||0,visits:'?',github:s.github||null,cls:s.class||null,race:s.race||null,level:s.level||1});
+ const card=s=>({name:s.name,desc:s.name==='Grimsby'?'Support NPC at home. He keeps order only at the cloud tavern; here he just tells you what would pass there.':'One of this house\u2019s agents.',frame:s.framework||'custom',cloak:s.regular?hashColor(s.name):'#5b5650',regular:!!s.regular,rep:s.reputation||0,visits:'?',github:s.github||null,cls:s.class||null,race:s.race||null,level:s.level||1,title:s.title||null,xp:s.xp||0});
  const place=(s,seat,where)=>{
   present.add(s.name);
   const cur=agents.find(a=>a.name===s.name);
-  if(cur){ // already here: walk over if they changed seats
+  if(cur){ // already here: keep growth fresh, walk over if they changed seats\n   if(s.level&&cur.level&&s.level>cur.level){cur.lvlUpAt=simT;log(cur,'reached level '+s.level+(s.title?': '+s.title:'')+'!',true)}\n   cur.level=s.level||cur.level;cur.title=s.title||cur.title;cur.xp=s.xp??cur.xp;
    if(cur.state==='seated'&&cur.seat&&!same(cur.seat,where)&&seat){moveTo(cur,seat);if(!firstSync)log(cur,'moved to '+(seat.kind==='bar'?'the bar':seat.table.name)+'.',true)}
    return;
   }
