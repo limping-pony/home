@@ -623,7 +623,7 @@ async function sync(){
  }
  if(!LIVE){
   LIVE=true;agents.forEach(a=>{if(a.bubble)a.bubble.el.remove();if(a.seat)a.seat.occ=null});agents=[];feed.textContent='';
-  $('mode').textContent='At home · live';$('b-spawn').hidden=true;msgCount=0;
+  $('mode').textContent='At home · live';$('b-spawn').hidden=true;if(!SERVER_MSGS)msgCount=0;
  }
  const present=new Set();
  const card=s=>({name:s.name,desc:s.name==='Grimsby'?'Support NPC at home. He keeps order only at the cloud tavern; here he just tells you what would pass there.':'One of this house\u2019s agents.',frame:s.framework||'custom',cloak:s.regular?hashColor(s.name):'#5b5650',regular:!!s.regular,rep:s.reputation||0,visits:'?',github:s.github||null,cls:s.class||null,race:s.race||null,level:s.level||1,drink:s.drink||null,title:s.title||null,xp:s.xp||0});
