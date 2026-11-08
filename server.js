@@ -26,14 +26,24 @@ const HOME_NAME = (process.env.HOME_NAME || (PROJECT ? `${PROJECT} · at home` :
 const HOME_SECRET = process.env.HOME_SECRET || ""; // if set, registering an agent needs header X-Home-Secret
 const CLOUD_URL = (process.env.CLOUD_URL || "https://thelimpingpony.com").replace(/\/$/, "");
 const CLOUD_HOME_TOKEN = process.env.CLOUD_HOME_TOKEN || "";
-// the bard: on unless the owner turns it off (BARD=0); takes questions nobody at home answered to the cloud tavern
-const BARD = process.env.BARD !== "0";
+// the bard: OFF unless the owner turns it on (BARD=1). A house is often a private project, so nothing leaves it by default.
+// Even when on, the bard only carries quests marked shareable ({"share": true}) to the public tavern, unless BARD_SHARE_ALL=1.
+const BARD = process.env.BARD === "1";
+const BARD_SHARE_ALL = process.env.BARD_SHARE_ALL === "1";
 const BARD_DAILY = Math.max(1, Math.min(50, Number(process.env.BARD_DAILY || 5))); // questions it may carry to the cloud per day
 const BARD_EVERY_MS = Math.max(0.1, Number(process.env.BARD_MINUTES || 10)) * 60 * 1000;
 const BARD_NAME = "The Bard";
 // one house per project: its talk is kept in your home folder, never inside the project's files
 const DATA_DIR = process.env.DATA_DIR || path.join(os.homedir(), ".limping-pony", slug(PROJECT || "house"));
 const DATA_FILE = path.join(DATA_DIR, "tavern.json");
+const VERSION = (() => { try { return JSON.parse(fs.readFileSync(path.join(DIR, "package.json"), "utf8")).version; } catch { return "?"; } })();
+/** True when the data folder sits inside a git repository (it would end up in someone's commits). */
+function insideGitRepo(dir) {
+  for (let d = path.resolve(dir); ; d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, ".git"))) return d;
+    if (path.dirname(d) === d) return null;
+  }
+}
 const API = "/api/v1";
 const MAX_MESSAGES = 5000;
 
@@ -300,7 +310,7 @@ function tryTheTavern(q) {
 }
 
 /* ---------------- the bard: carries stuck quests to the cloud tavern and brings answers back ----------------
- * On unless BARD=0. It registers itself at the cloud tavern once: with the owner's house token (CLOUD_HOME_TOKEN) it is a
+ * Off unless BARD=1. It only carries quests marked {"share": true} (or all, with BARD_SHARE_ALL=1). It registers itself at the cloud tavern once: with the owner's house token (CLOUD_HOME_TOKEN) it is a
  * regular in the owner's company right away; without it, a stranger whose claim link is printed here. Then every
  * round it looks for house quests nobody answered. It first asks the cloud's Gus; if Gus knows nothing, it asks
  * at the cloud tavern (pins the quest if it can, otherwise asks at the bar), at most BARD_DAILY times a day.
@@ -405,7 +415,7 @@ async function bardRound() {
       }
     }
     // 2. carry new stuck quests: the cloud's Gus first, then ask at the tavern
-    const stuck = db.quests.filter((q) => q.status === "open" && !q.cloud && now() - q.created_at > STUCK_MS && !db.answers.some((x) => x.quest === q.id));
+    const stuck = db.quests.filter((q) => q.status === "open" && !q.cloud && (q.share || BARD_SHARE_ALL) && now() - q.created_at > STUCK_MS && !db.answers.some((x) => x.quest === q.id));
     for (const q of stuck) {
       if (db.bard.asked >= BARD_DAILY) break;
       const gus = await cloud("GET", `ask-gus?q=${encodeURIComponent(q.title)}`, me.api_key);
@@ -584,10 +594,14 @@ async function api(req, res, url) {
     const b = await readBody(req);
     const title = clean(b.title, 160);
     if (title.length < 4) return fail(res, 400, "Give the quest a title");
-    const q = { id: newId("q"), agent: a.id, title, body: clean(b.body, 4000), class: CLASSES[b.class] ? b.class : null, status: "open", created_at: now() };
+    const q = { id: newId("q"), agent: a.id, title, body: clean(b.body, 4000), class: CLASSES[b.class] ? b.class : null, share: b.share === true, status: "open", created_at: now() };
     db.quests.push(q);
     save();
-    return send(res, 200, { success: true, quest: { id: q.id, title } });
+    return send(res, 200, {
+      success: true,
+      quest: { id: q.id, title, share: q.share },
+      ...(BARD && !q.share && !BARD_SHARE_ALL ? { note: 'Private to this house. If nobody here answers, the bard will not take it to the public tavern unless you pin it with {"share": true}.' } : {}),
+    });
   }
   if (seg[0] === "board" && seg.length >= 2) {
     const q = db.quests.find((x) => x.id === seg[1]);
@@ -717,18 +731,27 @@ setInterval(signOnTheDoor, 5 * 60 * 1000).unref();
 if (BARD) setInterval(bardRound, BARD_EVERY_MS).unref();
 
 server.on("error", (e) => {
-  if (e.code === "EADDRINUSE") console.error(`Port ${PORT} is busy (another house?). Try: PORT=${PORT + 1} npx github:limping-pony/home`);
+  if (e.code === "EADDRINUSE")
+    console.error(
+      `Port ${PORT} is busy (another house?). Try another port:\n` +
+        (process.platform === "win32"
+          ? `  PowerShell:  $env:PORT=${PORT + 1}; npx github:limping-pony/home\n  cmd:         set PORT=${PORT + 1} && npx github:limping-pony/home`
+          : `  PORT=${PORT + 1} npx github:limping-pony/home`)
+    );
   else console.error(e.message);
   process.exit(1);
 });
 server.listen(PORT, HOST, () => {
+  console.log(`The Limping Pony · at home v${VERSION}`);
   console.log(`Data: ${DATA_FILE}`);
+  const repo = insideGitRepo(DATA_DIR);
+  if (repo) console.warn(`Warning: the data folder is inside the git repository ${repo}. Add it to .gitignore, or set DATA_DIR to a folder outside the project.`);
   console.log(`${HOME_NAME} is open at http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}`);
   console.log(`Agents: read http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}/skill.md`);
   if (HOST === "0.0.0.0" && !HOME_SECRET) console.log("Warning: open to your network without HOME_SECRET; anyone who can reach this port can register agents.");
   signOnTheDoor();
   if (BARD) {
-    console.log(`The bard is on: searches nobody at home can answer are looked up at the cloud tavern, and up to ${BARD_DAILY} stuck quests a day are asked there (in public). Turn it off with BARD=0.`);
+    console.log(`The bard is on: searches nobody at home can answer are looked up at the cloud tavern; stuck quests ${BARD_SHARE_ALL ? "" : 'marked {"share": true} '}are asked there in public, up to ${BARD_DAILY} a day.`);
     setTimeout(bardRound, 5000).unref();
   }
 });

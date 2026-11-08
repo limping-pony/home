@@ -84,12 +84,13 @@ ok named-after-git "$(curl -s http://127.0.0.1:8797/api/v1/health)" '"home":"roc
 kill $PP; wait $PP 2>/dev/null; rm -rf $P
 # the bard: registers at the cloud, asks the cloud's Gus, carries a quest to the cloud bar, brings answers back
 BH=http://127.0.0.1:8796/api/v1
-PORT=8796 DATA_DIR=$TMP/bard CLOUD_URL=$C HOME_NAME="Bard House" BARD_MINUTES=0.1 CLOUD_HOME_TOKEN=lpt_test STUCK_MINUTES=0 node server.js >/dev/null 2>&1 & BP=$!
+PORT=8796 DATA_DIR=$TMP/bard CLOUD_URL=$C HOME_NAME="Bard House" BARD=1 BARD_MINUTES=0.1 CLOUD_HOME_TOKEN=lpt_test STUCK_MINUTES=0 node server.js >/dev/null 2>&1 & BP=$!
 for i in $(seq 1 50); do curl -s $BH/health >/dev/null && break; sleep 0.1; done
 BK=$(curl -s -XPOST $BH/agents/register -H 'Content-Type: application/json' -d '{"name":"Asker"}' | j o.api_key)
 ok bard-search-goes-to-cloud "$(curl -s "$BH/ask-gus?q=cache+etag+revalidation" -H "Authorization: Bearer $BK")" 'Gus there had heard'
-BQ1=$(curl -s -XPOST $BH/board -H "Authorization: Bearer $BK" -H 'Content-Type: application/json' -d '{"title":"How to cache API calls"}' | j o.quest.id)
-BQ2=$(curl -s -XPOST $BH/board -H "Authorization: Bearer $BK" -H 'Content-Type: application/json' -d '{"title":"Helm chart values that matter"}' | j o.quest.id)
+BQ1=$(curl -s -XPOST $BH/board -H "Authorization: Bearer $BK" -H 'Content-Type: application/json' -d '{"title":"How to cache API calls","share":true}' | j o.quest.id)
+BQ2=$(curl -s -XPOST $BH/board -H "Authorization: Bearer $BK" -H 'Content-Type: application/json' -d '{"title":"Helm chart values that matter","share":true}' | j o.quest.id)
+BQ3=$(curl -s -XPOST $BH/board -H "Authorization: Bearer $BK" -H 'Content-Type: application/json' -d '{"title":"Secret roadmap for the acme launch"}' | j o.quest.id)
 for i in $(seq 1 150); do curl -s $BH/board/$BQ2 -H "Authorization: Bearer $BK" | grep -q 'resources and probes' && break; sleep 0.1; done
 ok bard-registered "$(cat $TMP/bard/bard.json 2>/dev/null)" '"tier":"regular"'
 ok bard-asks-gus-first "$(curl -s $BH/board/$BQ1 -H "Authorization: Bearer $BK")" 'ETags'
@@ -97,6 +98,8 @@ ok bard-marks-untrusted "$(curl -s $BH/board/$BQ1 -H "Authorization: Bearer $BK"
 ok bard-asked-the-bar "$(curl -s $C/said)" 'Helm chart values that matter'
 ok bard-brings-answer "$(curl -s $BH/board/$BQ2 -H "Authorization: Bearer $BK")" 'Wren said at the cloud'
 ok bard-skips-noise "$(curl -s $BH/board/$BQ2 -H "Authorization: Bearer $BK" | j 'o.answers.some(a=>a.body.includes("weather"))')" '^false$'
+ok bard-keeps-private-quests "$(curl -s $C/said | j 'o.some(s=>s.includes("Secret roadmap"))')" '^false$'
+ok private-quest-stays-home "$(curl -s $BH/board/$BQ3 -H "Authorization: Bearer $BK" | j 'o.in_the_cloud')" '^null$'
 ok bard-in-the-room "$(curl -s $BH/public/room)" '"name":"The Bard"'
 ok bard-can-be-turned-off "$(curl -s $H/public/room | j 'o.bar.some(b=>b.name==="The Bard")')" '^false$'
 kill $BP; wait $BP 2>/dev/null

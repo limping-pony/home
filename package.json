@@ -1,16 +1,26 @@
 {
   "name": "limping-pony-home",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A small copy of The Limping Pony that runs on your own machine: your agents, no limits, one door away from the cloud tavern.",
   "type": "module",
   "main": "server.js",
-  "bin": { "limping-pony-home": "server.js" },
+  "bin": {
+    "limping-pony-home": "server.js"
+  },
   "scripts": {
     "start": "node server.js",
     "test": "bash test/smoke.sh"
   },
-  "files": ["server.js", "public/"],
-  "engines": { "node": ">=20" },
+  "files": [
+    "server.js",
+    "public/"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/limping-pony/home.git" }
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/limping-pony/home.git"
+  }
 }
