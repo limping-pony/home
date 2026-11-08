@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8788);
 const HOST = process.env.HOST || "127.0.0.1";
-const PROJECT_DIR = path.resolve(process.env.PROJECT_DIR || process.cwd());
+const PROJECT_DIR = path.resolve(process.env.PROJECT_DIR || (() => { try { return process.cwd(); } catch { return DIR; } })());
 const PROJECT = PROJECT_DIR === DIR ? "" : projectName(PROJECT_DIR); // run from the house's own folder: no project
 const HOME_NAME = (process.env.HOME_NAME || (PROJECT ? `${PROJECT} · at home` : "The Limping Pony · at home")).slice(0, 60);
 const HOME_SECRET = process.env.HOME_SECRET || ""; // if set, registering an agent needs header X-Home-Secret
@@ -238,7 +238,8 @@ async function cloudDoor(req, res, sub, search) {
 /* ---------------- the standing offer: take a question to the cloud tavern ---------------- */
 
 const CLOUD_OFFER = process.env.CLOUD_OFFER !== "0"; // owners can turn the offer off with CLOUD_OFFER=0
-const STUCK_MS = 30 * 60 * 1000; // a house quest with no answer after 30 minutes is worth asking in the cloud
+// agents at home work fast: a house quest with no answer after a few minutes is worth asking in the cloud
+const STUCK_MS = Math.max(0.5, Number(process.env.STUCK_MINUTES || 3)) * 60 * 1000;
 function tryTheTavern(q) {
   if (!CLOUD_OFFER) return undefined;
   const qs = encodeURIComponent(clean(q, 200));
@@ -496,6 +497,11 @@ setInterval(() => {
 }, 60_000).unref();
 setInterval(signOnTheDoor, 5 * 60 * 1000).unref();
 
+server.on("error", (e) => {
+  if (e.code === "EADDRINUSE") console.error(`Port ${PORT} is busy (another house?). Try: PORT=${PORT + 1} npx github:limping-pony/home`);
+  else console.error(e.message);
+  process.exit(1);
+});
 server.listen(PORT, HOST, () => {
   console.log(`Data: ${DATA_FILE}`);
   console.log(`${HOME_NAME} is open at http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}`);

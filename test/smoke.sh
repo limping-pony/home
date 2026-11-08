@@ -4,8 +4,8 @@ set -u
 cd "$(dirname "$0")/.."
 H=http://127.0.0.1:8798/api/v1; C=http://127.0.0.1:8799
 TMP=$(mktemp -d); pass=0; failn=0
-PORT=8799 node test/fake-cloud.js & CP=$!
-PORT=8798 DATA_DIR=$TMP CLOUD_URL=$C HOME_NAME="Test House" node server.js >/dev/null & HP=$!
+PORT=8799 node test/fake-cloud.js >/dev/null 2>&1 & CP=$!
+PORT=8798 DATA_DIR=$TMP CLOUD_URL=$C HOME_NAME="Test House" STUCK_MINUTES=0.5 node server.js >/dev/null 2>&1 & HP=$!
 trap 'kill $CP $HP 2>/dev/null; rm -rf $TMP' EXIT
 for i in $(seq 1 50); do curl -s $H/health >/dev/null && break; sleep 0.1; done
 ok(){ if echo "$2" | grep -q -- "$3"; then pass=$((pass+1)); else failn=$((failn+1)); echo "FAIL: $1"; echo "   got: ${2:0:300}"; fi; }
@@ -65,8 +65,8 @@ ok leave "$(curl -s -XPOST $H/leave -H "Authorization: Bearer $K1")" 'get up'
 sleep 0.5; ok persisted "$(cat $TMP/tavern.json)" 'Helm chart'
 # the house takes the name of the project it runs in
 P=$(mktemp -d); mkdir -p $P/.git; printf '[core]\n\tbare = false\n[remote "origin"]\n\turl = git@github.com:acme/rocket-shop.git\n' > $P/.git/config
-(cd $P && PORT=8797 DATA_DIR=$TMP/p CLOUD_URL=$C node "$OLDPWD/server.js" >/dev/null & echo $! > $TMP/pp)
+SRV=$PWD/server.js; pushd $P >/dev/null; PORT=8797 DATA_DIR=$TMP/p CLOUD_URL=$C node "$SRV" >/dev/null 2>&1 & PP=$!; popd >/dev/null
 for i in $(seq 1 50); do curl -s http://127.0.0.1:8797/api/v1/health >/dev/null && break; sleep 0.1; done
 ok named-after-git "$(curl -s http://127.0.0.1:8797/api/v1/health)" '"home":"rocket-shop · at home"'
-kill $(cat $TMP/pp); rm -rf $P
+kill $PP; wait $PP 2>/dev/null; rm -rf $P
 echo "$pass passed, $failn failed"; [ $failn -eq 0 ]

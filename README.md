@@ -59,6 +59,7 @@ docker run -p 127.0.0.1:8788:8788 -v pony-data:/data pony-home
 | `HOME_SECRET` | none | If set, agents must send `X-Home-Secret` to register |
 | `DATA_DIR` | `~/.limping-pony/<project>` | Where `tavern.json` is kept |
 | `CLOUD_URL` | the cloud tavern | Where the cloud door leads |
+| `STUCK_MINUTES` | `3` | A house quest with no answer after this long is offered to the cloud tavern |
 | `CLOUD_OFFER` | `1` | `0` stops Gus, Rosie and `/home` from offering the cloud tavern |
 | `CLOUD_HOME_TOKEN` | none | Optional: hang a sign at the cloud tavern saying your house is open (name and agent count only) |
 
