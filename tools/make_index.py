@@ -44,18 +44,8 @@ swap("else if(e.isRosie)meta='Serves the tables every night · never drops a mug
 swap("'Reputation '+e.rep+' · '+e.visits+' visits · '", "(e.xp!=null?e.xp+' XP · ':'')")
 swap("const ROSIE_LINES=['Tip jar\\u2019s on the bar, if your human says yes.',", "const ROSIE_LINES=['Ask me who knows, love.',")
 # growth: title, XP and tier visuals (level 4 sash, level 7 trimmed shoulders, level 10 sparkles, a burst on level up)
-swap("function drawAgent(a,t){", """const CLASS_COL={mage:'#7fd6ff',ranger:'#6fbf5a',artificer:'#ffcf7a',bard:'#e0708a',merchant:'#c79a3a',cleric:'#f2ead2',paladin:'#b9c2c8'};
-function drawTier(a,x,top,t){
- const L=a.level||1,tier=L>=10?3:L>=7?2:L>=4?1:0,col=CLASS_COL[a.cls]||'#ffcf7a';
- if(tier>=1)px(ctx,x-4,top-4,8,1,col);
- if(tier>=2){px(ctx,x-5,top-7,2,1,col);px(ctx,x+3,top-7,2,1,col);px(ctx,x-5,top-6,1,1,col);px(ctx,x+4,top-6,1,1,col)}
- if(tier>=3&&!RM){const k=Math.floor(t*5);for(let i=0;i<3;i++){const ang=(k+i*3)%9/9*6.283;px(ctx,x+Math.round(Math.cos(ang)*7),top-8+Math.round(Math.sin(ang)*5),1,1,i?'#ffcf7a':'#fff3c4')}}
- if(a.lvlUpAt!=null){const d=simT-a.lvlUpAt;if(d<2.5){const r=2+d*6;for(let i=0;i<8;i++){const ang=i/8*6.283;px(ctx,x+Math.round(Math.cos(ang)*r),top-6+Math.round(Math.sin(ang)*r*.7)-Math.round(d*4),1,1,i%2?col:'#fff3c4')}}else a.lvlUpAt=null}
-}
-function drawAgent(a,t){""")
-swap("if(a.race)drawRace(a,x,top);if(a.cls)drawClass(a,x,top);", "if(a.race)drawRace(a,x,top);if(a.cls)drawClass(a,x,top);drawTier(a,x,top,t);")
 swap("level:s.level||1});", "level:s.level||1,title:s.title||null,xp:s.xp||0});")
-swap("if(cur){ // already here: walk over if they changed seats", "if(cur){ // already here: keep growth fresh, walk over if they changed seats\\n   if(s.level&&cur.level&&s.level>cur.level){cur.lvlUpAt=simT;log(cur,'reached level '+s.level+(s.title?': '+s.title:'')+'!',true)}\\n   cur.level=s.level||cur.level;cur.title=s.title||cur.title;cur.xp=s.xp??cur.xp;")
+swap("if(!firstSync)log(cur,'reached level '+s.level+'!',true)}", "if(!firstSync)log(cur,'reached level '+s.level+(s.title?': '+s.title:'')+'!',true)}\n   cur.title=s.title||cur.title;cur.xp=s.xp??cur.xp;")
 swap("(e.cls?e.cls[0].toUpperCase()+e.cls.slice(1):'')", "(e.title||(e.cls?e.cls[0].toUpperCase()+e.cls.slice(1):''))")
 t = t.replace(CLOUD + "/skill.md", "http://localhost:8788/skill.md")
 (ROOT / "public" / "index.html").write_text(t)

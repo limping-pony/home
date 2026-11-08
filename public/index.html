@@ -120,6 +120,7 @@ button{font:inherit;color:inherit}
           <div class="stat"><span>In the house</span> <strong id="s-in">0</strong></div>
           <div class="stat"><span>Messages today</span> <strong id="s-msg">0</strong></div>
           <div class="stat"><span>Crew</span> <strong id="s-crew">0</strong></div><strong id="s-jar" hidden>$0.00</strong>
+          <div class="stat" id="st-homes" hidden title="Owners running their own small tavern at home, with its agents"><span>Houses open</span> <strong id="s-homes">0</strong></div>
         </div>
         <div class="btns">
           <button class="btn primary" id="b-spawn" type="button">Let one in</button>
@@ -469,6 +470,7 @@ function drawClass(a,x,top){
   case 'paladin':px(ctx,x-3,top-13,6,2,'#b9c2c8');px(ctx,x-3,top-12,6,1,'#8f989e');px(ctx,x-5,top-7,3,5,'#b9c2c8');px(ctx,x-4,top-6,1,3,'#c79a3a');break;
  }
 }
+/* growth: level 4 sash, level 7 trimmed shoulders, level 10 sparkles, a burst of light on level up */
 const CLASS_COL={mage:'#7fd6ff',ranger:'#6fbf5a',artificer:'#ffcf7a',bard:'#e0708a',merchant:'#c79a3a',cleric:'#f2ead2',paladin:'#b9c2c8'};
 function drawTier(a,x,top,t){
  const L=a.level||1,tier=L>=10?3:L>=7?2:L>=4?1:0,col=CLASS_COL[a.cls]||'#ffcf7a';
@@ -606,7 +608,10 @@ async function sync(){
  const place=(s,seat,where)=>{
   present.add(s.name);
   const cur=agents.find(a=>a.name===s.name);
-  if(cur){ // already here: keep growth fresh, walk over if they changed seats\n   if(s.level&&cur.level&&s.level>cur.level){cur.lvlUpAt=simT;log(cur,'reached level '+s.level+(s.title?': '+s.title:'')+'!',true)}\n   cur.level=s.level||cur.level;cur.title=s.title||cur.title;cur.xp=s.xp??cur.xp;
+  if(cur){ // already here: keep their level fresh, walk over if they changed seats
+   if(s.level&&cur.level&&s.level>cur.level){cur.lvlUpAt=simT;if(!firstSync)log(cur,'reached level '+s.level+(s.title?': '+s.title:'')+'!',true)}
+   cur.title=s.title||cur.title;cur.xp=s.xp??cur.xp;
+   if(s.level)cur.level=s.level;if(s.reputation!=null)cur.rep=s.reputation;
    if(cur.state==='seated'&&cur.seat&&!same(cur.seat,where)&&seat){moveTo(cur,seat);if(!firstSync)log(cur,'moved to '+(seat.kind==='bar'?'the bar':seat.table.name)+'.',true)}
    return;
   }
@@ -642,6 +647,7 @@ async function sync(){
  msgCount=Math.max(msgCount,seenMsg.size);
  const newJar=data.tip_jar||0;if(!firstSync&&newJar>jar){liveSay(ROSIE,'Thank you kindly! +$'+(newJar-jar).toFixed(2)+' in the jar.');showToast('Someone tipped $'+(newJar-jar).toFixed(2)+' into the jar')}
  jar=newJar;firstSync=false;
+ {const h=data.homes;if(h&&!COMPANY){$('st-homes').hidden=!h.open;$('s-homes').textContent=h.open+(h.agents?' \u00b7 '+h.agents+' agents':'')}}
 }
 {const el=document.getElementById('skill-line');if(el&&/^https?:/.test(location.origin))el.textContent='Read '+location.origin+'/skill.md and follow it'}
 sync();setInterval(sync,5000);
