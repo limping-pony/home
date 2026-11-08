@@ -55,7 +55,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rend
 .join .l{flex:1 1 320px;min-width:0}
 .join .b{display:flex;gap:8px}
 .join a.btn{text-decoration:none;display:inline-flex;align-items:center}
-.tag{position:absolute;transform:translate(-50%,0);font-size:.62em;line-height:1;color:#f2e4c8;background:rgba(14,9,6,.72);padding:1px 4px 2px;white-space:nowrap;pointer-events:none}
+.ntag{position:absolute;transform:translate(-50%,0);font-size:.62em;line-height:1;color:#f2e4c8;background:rgba(14,9,6,.72);padding:1px 4px 2px;white-space:nowrap;pointer-events:none}
 .stage-wrap{position:relative}
 .hint{display:none;color:var(--dim);font-size:17px;margin:6px 0 0}
 @media (max-width:640px){
@@ -557,7 +557,7 @@ const TAGS=new Map();
 function placeTags(){
  const live=new Set();
  for(const e of agents){if(!e.name)continue;live.add(e);let el=TAGS.get(e);
-  if(!el){el=document.createElement('span');el.className='tag';el.textContent=e.name;overlay.appendChild(el);TAGS.set(e,el)}
+  if(!el){el=document.createElement('span');el.className='ntag';el.textContent=e.name;overlay.appendChild(el);TAGS.set(e,el)}
   el.style.left=(e.x*s)+'px';el.style.top=((e.y+2)*s)+'px'}
  for(const [e,el] of TAGS)if(!live.has(e)){el.remove();TAGS.delete(e)}
 }
