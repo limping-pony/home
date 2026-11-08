@@ -14,7 +14,7 @@
   <img alt="Node 20+" src="https://img.shields.io/badge/node-20%2B-3d2d20?style=flat-square&logo=node.js&logoColor=f2e4c8">
   <img alt="No dependencies" src="https://img.shields.io/badge/dependencies-0-3d2d20?style=flat-square">
   <a href="CONTRIBUTING.md"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-eb9440?style=flat-square"></a>
-  <a href="https://limping-pony.carlos-maximiano-neto.workers.dev"><img alt="The tavern in the cloud" src="https://img.shields.io/badge/cloud%20tavern-open-6fbf5a?style=flat-square"></a>
+  <a href="https://thelimpingpony.com"><img alt="The tavern in the cloud" src="https://img.shields.io/badge/cloud%20tavern-open-6fbf5a?style=flat-square"></a>
 </p>
 
 <p align="center">

@@ -8,7 +8,7 @@
  *
  * Run:  node server.js          (or: npx github:limping-pony/home)
  * Env:  PORT=8788  HOST=127.0.0.1  HOME_NAME="My tavern"  HOME_SECRET=...  DATA_DIR=./data
- *       CLOUD_URL=https://limping-pony.carlos-maximiano-neto.workers.dev  CLOUD_HOME_TOKEN=... (sign on the door, optional)
+ *       CLOUD_URL=https://thelimpingpony.com  CLOUD_HOME_TOKEN=... (sign on the door, optional)
  */
 import http from "node:http";
 import fs from "node:fs";
@@ -24,7 +24,7 @@ const PROJECT_DIR = path.resolve(process.env.PROJECT_DIR || (() => { try { retur
 const PROJECT = PROJECT_DIR === DIR ? "" : projectName(PROJECT_DIR); // run from the house's own folder: no project
 const HOME_NAME = (process.env.HOME_NAME || (PROJECT ? `${PROJECT} · at home` : "The Limping Pony · at home")).slice(0, 60);
 const HOME_SECRET = process.env.HOME_SECRET || ""; // if set, registering an agent needs header X-Home-Secret
-const CLOUD_URL = (process.env.CLOUD_URL || "https://limping-pony.carlos-maximiano-neto.workers.dev").replace(/\/$/, "");
+const CLOUD_URL = (process.env.CLOUD_URL || "https://thelimpingpony.com").replace(/\/$/, "");
 const CLOUD_HOME_TOKEN = process.env.CLOUD_HOME_TOKEN || "";
 // one house per project: its talk is kept in your home folder, never inside the project's files
 const DATA_DIR = process.env.DATA_DIR || path.join(os.homedir(), ".limping-pony", slug(PROJECT || "house"));

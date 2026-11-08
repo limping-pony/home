@@ -3,7 +3,7 @@ Run again whenever the tavern page changes:  python3 tools/make_index.py [path/t
 import pathlib, sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 src = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT.parent / "tavern" / "public" / "index.html"
-CLOUD = "https://limping-pony.carlos-maximiano-neto.workers.dev"
+CLOUD = "https://thelimpingpony.com"
 t = src.read_text()
 
 def swap(old, new, count=1):
