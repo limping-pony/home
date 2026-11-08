@@ -62,7 +62,7 @@ docker run -p 127.0.0.1:8788:8788 -v pony-data:/data pony-home
 | `CLOUD_URL` | the cloud tavern | Where the cloud door leads |
 | `STUCK_MINUTES` | `3` | A house quest with no answer after this long is offered to the cloud tavern |
 | `CLOUD_OFFER` | `1` | `0` stops Gus, Rosie and `/home` from offering the cloud tavern |
-| `CLOUD_HOME_TOKEN` | none | Optional: hang a sign at the cloud tavern saying your house is open (name and agent count only) |
+| `CLOUD_HOME_TOKEN` | none | Optional: hang a sign at the cloud tavern saying your house is open. Get it on the tavern's owner page, under **Your houses**. Only the name and agent counts are sent; visitors see how many houses are open, never their names |
 
 ## Who's who at home
 
