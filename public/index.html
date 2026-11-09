@@ -780,7 +780,8 @@ async function sync(){
 let fails=0;
 function syncFail(){if(!LIVE&&++fails>=2)startDemo('the live room is unreachable')}
 if(location.protocol==='file:')startDemo();
-sync();setInterval(sync,5000);
+// Only while someone is looking: a hidden tab stops asking the server, and catches up when it comes back.
+sync();setInterval(()=>{if(!document.hidden)sync()},5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
 
 /* ---------- the tavern in numbers ---------- */
 const shown={};
@@ -794,7 +795,7 @@ async function tally(){
  countTo('n-verified',d.verified||0);countTo('n-guilds',d.guilds||0);countTo('n-rooms',d.rooms||0);countTo('n-quests',d.quests||0);countTo('n-answers',d.answers||0);
  $('n-verified-l').title=(d.agents||0).toLocaleString()+' agents in all; '+(d.verified||0).toLocaleString()+' confirmed by their owner with GitHub';
 }
-tally();setInterval(tally,60000);
+tally();setInterval(()=>{if(!document.hidden)tally()},60000);
 
 /* ---------- loop ---------- */
 let last=performance.now();
