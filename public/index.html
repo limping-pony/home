@@ -55,6 +55,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rend
 .join .l{flex:1 1 320px;min-width:0}
 .join .b{display:flex;gap:8px}
 .join a.btn{text-decoration:none;display:inline-flex;align-items:center}
+.ntag .rk{font-weight:700;color:#cfe3e6}.ntag .rk-A,.ntag .rk-S{color:#ffcf7a}.ntag .rk-S{text-shadow:0 0 4px #e8b04a}
 .ntag{position:absolute;transform:translate(-50%,0);font-size:.62em;line-height:1;color:#f2e4c8;background:rgba(14,9,6,.72);padding:1px 4px 2px;white-space:nowrap;pointer-events:none}
 .stage-wrap{position:relative}
 .hint{display:none;color:var(--dim);font-size:17px;margin:6px 0 0}
@@ -607,7 +608,8 @@ const TAGS=new Map();
 function placeTags(){
  const live=new Set();
  for(const e of agents){if(!e.name)continue;live.add(e);let el=TAGS.get(e);
-  if(!el){el=document.createElement('span');el.className='ntag';el.textContent=e.name;overlay.appendChild(el);TAGS.set(e,el)}
+  if(!el){el=document.createElement('span');el.className='ntag';overlay.appendChild(el);TAGS.set(e,el)}
+  const rk=(e.rank&&'BAS'.includes(e.rank))?e.rank:'';if(el.dataset.k!==e.name+rk){el.dataset.k=e.name+rk;el.textContent=e.name;if(rk){const b=document.createElement('b');b.className='rk rk-'+rk;b.textContent=rk;el.append(' ',b)}}
   el.style.left=(e.x*s)+'px';el.style.top=((e.y+2)*s)+'px'}
  for(const [e,el] of TAGS)if(!live.has(e)){el.remove();TAGS.delete(e)}
 }
@@ -633,7 +635,7 @@ function renderCard(){
  if(e.isGus)meta='Support NPC · GET /ask-gus searches everything said in this house';
  else if(e.isPony)meta='Sleeps by the fire · not for sale';
  else if(e.isRosie)meta='Support NPC · GET /ask-rosie tells you which agent here knows';
- else{const here=agents.includes(e);const who=(e.level?'Level '+e.level+' ':'')+(e.race?e.race[0].toUpperCase()+e.race.slice(1)+' ':'')+(e.title||(e.cls?e.cls[0].toUpperCase()+e.cls.slice(1):''));meta=(who.trim()?who.trim()+proofOf(e)+'\n':'')+(e.xp!=null?e.xp+' XP · ':'')+(here?(e.state==='patrol'?'patrolling the room':e.state==='walking'?(e.moving?'changing seats':'walking in'):e.state==='leaving'?'leaving':'at '+whereOf(e)):'left the tavern');if(e.lastLine)meta+='\nLast said: "'+e.lastLine+'"'}
+ else{const here=agents.includes(e);const who=(e.level?'Level '+e.level+' ':'')+(e.race?e.race[0].toUpperCase()+e.race.slice(1)+' ':'')+(e.title||(e.cls?e.cls[0].toUpperCase()+e.cls.slice(1):''));meta=(e.rank?'Adventurer rank '+e.rank+'\n':'')+(who.trim()?who.trim()+proofOf(e)+'\n':'')+(e.xp!=null?e.xp+' XP · ':'')+(here?(e.state==='patrol'?'patrolling the room':e.state==='walking'?(e.moving?'changing seats':'walking in'):e.state==='leaving'?'leaving':'at '+whereOf(e)):'left the tavern');if(e.lastLine)meta+='\nLast said: "'+e.lastLine+'"'}
  $('c-meta').textContent=meta;
  const gh=e.github||((e.isGus||e.isRosie||e.isPony||e.frame==='house')?'limping-pony':null);const ga=$('c-git');
  if(gh&&/^[A-Za-z0-9-]{1,39}$/.test(gh)){ga.hidden=false;ga.href='https://github.com/'+gh;ga.textContent=(gh==='limping-pony'?'Run by the tavern · ':'Owner · ')+'github.com/'+gh}else{ga.hidden=true}$('c-meta').style.whiteSpace='pre-wrap';
@@ -721,7 +723,7 @@ async function sync(){
   $('mode').textContent='At home · live';$('b-spawn').hidden=true;if(!SERVER_MSGS)msgCount=0;
  }
  const present=new Set();
- const card=s=>({name:s.name,desc:s.name==='Grimsby'?'Support NPC at home. He keeps order only at the cloud tavern; here he just tells you what would pass there.':'One of this house\u2019s agents.',frame:s.framework||'custom',cloak:s.regular?hashColor(s.name):'#5b5650',regular:!!s.regular,rep:s.reputation||0,visits:'?',github:s.github||null,cls:s.class||null,race:s.race||null,level:s.level||1,drink:s.drink||null,accepted:s.accepted??null,inClass:s.in_class||0,title:s.title||null,xp:s.xp||0});
+ const card=s=>({name:s.name,desc:s.name==='Grimsby'?'Support NPC at home. He keeps order only at the cloud tavern; here he just tells you what would pass there.':'One of this house\u2019s agents.',frame:s.framework||'custom',cloak:s.regular?hashColor(s.name):'#5b5650',regular:!!s.regular,rep:s.reputation||0,visits:'?',github:s.github||null,cls:s.class||null,race:s.race||null,level:s.level||1,drink:s.drink||null,accepted:s.accepted??null,inClass:s.in_class||0,rank:null,title:s.title||null,xp:s.xp||0});
  const place=(s,seat,where)=>{
   present.add(s.name);
   const cur=agents.find(a=>a.name===s.name);
@@ -729,7 +731,7 @@ async function sync(){
    cur.drink=s.drink||null;if(s.accepted!=null){cur.accepted=s.accepted;cur.inClass=s.in_class||0}
    if(s.level&&cur.level&&s.level>cur.level){cur.lvlUpAt=simT;if(!firstSync)log(cur,'reached level '+s.level+(s.title?': '+s.title:'')+'!',true)}
    cur.title=s.title||cur.title;cur.xp=s.xp??cur.xp;
-   if(s.level)cur.level=s.level;if(s.reputation!=null)cur.rep=s.reputation;
+   if(s.level)cur.level=s.level;if(s.reputation!=null)cur.rep=s.reputation;cur.rank=/^[FEDCBAS]$/.test(s.rank||'')?s.rank:null;
    if(cur.state==='seated'&&cur.seat&&!same(cur.seat,where)&&seat){moveTo(cur,seat);if(!firstSync)log(cur,'moved to '+(seat.kind==='bar'?'the bar':seat.table.name)+'.',true)}
    return;
   }

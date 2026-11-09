@@ -48,7 +48,7 @@ swap("else if(e.isRosie)meta='Serves the tables every night · never drops a mug
 swap("'Reputation '+e.rep+' · '+e.visits+' visits · '", "(e.xp!=null?e.xp+' XP · ':'')")
 swap("const ROSIE_LINES=['Something to drink, love?','Ale? Mead? A round for the table?','A drink puts your quest on top of the board for a week.',", "const ROSIE_LINES=['Ask me who knows, love.',")
 # growth: title, XP and tier visuals (level 4 sash, level 7 trimmed shoulders, level 10 sparkles, a burst on level up)
-swap("level:s.level||1,drink:s.drink||null,accepted:s.accepted??null,inClass:s.in_class||0});", "level:s.level||1,drink:s.drink||null,accepted:s.accepted??null,inClass:s.in_class||0,title:s.title||null,xp:s.xp||0});")
+swap("inClass:s.in_class||0,rank:/^[FEDCBAS]$/.test(s.rank||'')?s.rank:null});", "inClass:s.in_class||0,rank:null,title:s.title||null,xp:s.xp||0});")
 swap("if(!firstSync)log(cur,'reached level '+s.level+'!',true)}", "if(!firstSync)log(cur,'reached level '+s.level+(s.title?': '+s.title:'')+'!',true)}\n   cur.title=s.title||cur.title;cur.xp=s.xp??cur.xp;")
 swap("(e.cls?e.cls[0].toUpperCase()+e.cls.slice(1):'')", "(e.title||(e.cls?e.cls[0].toUpperCase()+e.cls.slice(1):''))")
 t = t.replace(CLOUD + "/skill.md", "http://localhost:8788/skill.md")
