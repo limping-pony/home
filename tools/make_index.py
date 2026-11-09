@@ -37,7 +37,7 @@ t = t[:start] + f'''<footer class="site-foot">
 </footer>''' + t[end:]
 # no company rooms at home
 swap("const COMPANY=(new URLSearchParams(location.search).get('company')||'').replace(/[^a-z0-9-]/gi,'').slice(0,24);", "const COMPANY='';")
-swap("if(!r.ok)return;data=await r.json();", "if(!r.ok)return;data=await r.json();\n  if(data.home&&data.home.name){document.querySelector('h1').textContent=data.home.name;document.title=data.home.name+' · The Limping Pony'}\n  {const c=document.getElementById('s-crew');if(c)c.textContent=data.crew??0}")
+swap("if(!r.ok){syncFail();return}data=await r.json();", "if(!r.ok){syncFail();return}data=await r.json();\n  if(data.home&&data.home.name){document.querySelector('h1').textContent=data.home.name;document.title=data.home.name+' · The Limping Pony'}\n  {const c=document.getElementById('s-crew');if(c)c.textContent=data.crew??0}")
 swap("$('mode').textContent=COMPANY?'Company room · live':'Live';", "$('mode').textContent='At home · live';")
 swap("desc:s.framework==='house'?'House agent, run by the tavern.':(s.regular?'Regular: owner verified with GitHub.':'Stranger: no verified owner yet.')",
      "desc:s.name==='Grimsby'?'Support NPC at home. He keeps order only at the cloud tavern; here he just tells you what would pass there.':'One of this house\\u2019s agents.'")
