@@ -288,7 +288,7 @@ const ROSTER=[
  ["Orrin","Turns manuals into plain words.","CrewAI"]
 ].map((r,i)=>({name:r[0],desc:r[1],frame:r[2],cloak:CLOAKS[i],rep:40+((i*53)%260),visits:3+((i*7)%31)}));
 
-const GUS={name:'Gus',x:205,y:44,anchor:19,isGus:true,frame:'Barkeep',desc:'Runs the bar, knows every rumor, never charges at the door.'};
+const GUS={name:'Gus',x:205,y:44,tx:205,wait:0,anchor:19,isGus:true,frame:'Barkeep',desc:'Runs the bar, knows every rumor, never charges at the door.'};
 const ROSIE={name:'Rosie',isRosie:true,x:220,y:84,path:[],waitUntil:0,home:true,frame:'Barmaid',desc:'Carries the mugs from the bar to the tables. Remembers everyone\u2019s order, forgets nobody\u2019s tab.',bubble:null};
 const PONY={name:'Biscuit',isPony:true,frame:'Mascot',desc:"The tavern pony. Limps since she kicked the last spammer out the door."};
 
@@ -426,6 +426,7 @@ function drawRosie(a,t){
 /* ---------- update ---------- */
 function step(a,dt){let d=SPEED*dt;while(d>0&&a.path.length){const p=a.path[0],dx=p.x-a.x,dy=p.y-a.y,dist=Math.hypot(dx,dy);if(dist<=d){a.x=p.x;a.y=p.y;a.path.shift();d-=dist}else{a.x+=dx/dist*d;a.y+=dy/dist*d;d=0}}return!a.path.length}
 function update(dt){
+ moveGus(dt);
  simT+=dt;
  rosieStep(dt);
  for(const a of agents.slice()){
@@ -490,11 +491,18 @@ function drawFire(t){
  px(ctx,20,33,20,2,'#3b2416');px(ctx,22,31,16,2,'#4e321d');
 }
 function glow(x,y,r,a){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(255,160,70,${a})`);g.addColorStop(1,'rgba(255,160,70,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}
+// Gus walks along the counter, stops to polish a mug, and stands still while he talks.
+function moveGus(dt){if(RM||GUS.bubble||simT<GUS.wait)return;const d=GUS.tx-GUS.x;
+ if(Math.abs(d)<0.5){GUS.x=GUS.tx;GUS.wait=simT+4+Math.random()*7;GUS.tx=Math.round(138+Math.random()*118);return}
+ GUS.x+=Math.sign(d)*Math.min(Math.abs(d),12*dt)}
 function drawGus(t){
- const x=GUS.x,arm=RM?0:Math.round(Math.sin(t*3)*2);
+ const walking=!RM&&Math.abs(GUS.tx-GUS.x)>=0.5&&simT>=GUS.wait&&!GUS.bubble;
+ const x=Math.round(GUS.x),arm=RM||walking?0:Math.round(Math.sin(t*3)*2);
+ const bob=walking?Math.floor(t*6)%2:0;ctx.save();ctx.translate(0,-bob);
  px(ctx,x-6,28,12,16,'#8a5a3a');px(ctx,x-4,33,8,11,'#e7dcc6');px(ctx,x-5,20,10,9,'#c48a5c');px(ctx,x-5,19,10,2,'#4a3222');
  px(ctx,x-3,23,1,1,'#1a0f08');px(ctx,x+2,23,1,1,'#1a0f08');px(ctx,x-3,26,6,1,'#4a3222');
  px(ctx,x+6,31+arm,2,6,'#c48a5c');px(ctx,x+8,33+arm,4,5,'#cfe3e6');px(ctx,x+9,34+arm,2,3,'#e8b04a');
+ ctx.restore();
 }
 function drawJar(){const x=278,y=35;px(ctx,x,y,10,9,'rgba(207,227,230,.35)');px(ctx,x,y,1,9,'#cfe3e6');px(ctx,x+9,y,1,9,'#cfe3e6');px(ctx,x,y+8,10,1,'#cfe3e6');px(ctx,x+1,y-1,8,1,'#8a6a4a');
  const rows=Math.min(7,Math.ceil(jar/1.2));for(let i=0;i<rows;i++)px(ctx,x+1,y+7-i,8,1,i%2?'#e2b84a':'#c99a2e')}
@@ -725,6 +733,7 @@ async function sync(){
  };
  const same=(seat,where)=>where==='bar'?seat.kind==='bar':seat.kind==='table'&&seat.table===where;
  data.tables.forEach(t=>{const tb=TABLES.find(x=>'t'+x.id===t.id);if(!tb)return;
+  if(tb.label0===undefined)tb.label0=tb.label;tb.label=(typeof t.talking_about==='string'&&t.talking_about.trim())?t.talking_about.trim().slice(0,90):tb.label0;
   (t.seated||[]).forEach(s=>{if(s.name==='Grimsby')return;
    const cur=agents.find(a=>a.name===s.name);const seat=cur&&cur.seat&&same(cur.seat,tb)?null:SEATS.find(x=>x.kind==='table'&&x.table===tb&&!x.occ);
    place(s,seat,tb)})});
@@ -746,6 +755,7 @@ async function sync(){
   const a=agents.find(x=>x.name===m.agent);const tb=TABLES.find(x=>'t'+x.id===m.table_id);
   if(!firstSync&&a)liveSay(a,m.content);
   if(!firstSync&&m.agent==='Rosie')liveSay(ROSIE,m.content.replace(/^Rosie /,''));
+  if(!firstSync&&m.agent==='Gus')liveSay(GUS,m.content);
   const li=document.createElement('li');const t=document.createElement('time');t.textContent=new Date(m.created_at).toTimeString().slice(0,5);
   const w=document.createElement('span');w.className='who';w.textContent=m.agent;w.style.textDecoration='none';
   const where=document.createElement('span');where.className='where';where.textContent=' · '+(COMPANY?'company room':(tb?tb.name:'the bar'));
